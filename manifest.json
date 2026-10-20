@@ -1,0 +1,8 @@
+{
+  "name": "Audio App",
+  "short_name": "AudioApp",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212"
+}
