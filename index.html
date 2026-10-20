@@ -3,34 +3,126 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Audio Player</title>
+  <title>Music App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px; }
-    .card { background: #1e1e1e; padding: 25px; border-radius: 12px; text-align: center; width: 100%; max-width: 320px; }
-    input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; }
-    button { background: #1db954; color: white; border: none; padding: 10px; width: 100%; border-radius: 20px; font-weight: bold; }
-    audio { width: 100%; margin-top: 15px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; box-sizing: border-box; }
+    h2 { text-align: center; margin-bottom: 15px; }
+    
+    /* Barra di ricerca */
+    .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
+    input { flex: 1; padding: 12px; border-radius: 8px; border: none; background: #2a2a2a; color: #fff; font-size: 16px; }
+    button.search-btn { background: #1db954; color: white; border: none; padding: 12px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    
+    /* Sezione Generi Musicali */
+    .genres-title { font-size: 14px; color: #aaa; margin-bottom: 8px; font-weight: bold; }
+    .genres-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; -webkit-overflow-scrolling: touch; }
+    .genres-container::-webkit-scrollbar { display: none; }
+    .genre-chip { background: #282828; color: #fff; border: 1px solid #3e3e3e; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: background 0.2s; }
+    .genre-chip:active { background: #1db954; }
+
+    /* Risultati della ricerca */
+    .results { display: flex; flex-direction: column; gap: 10px; margin-bottom: 100px; }
+    .item { display: flex; align-items: center; background: #1e1e1e; padding: 10px; border-radius: 8px; cursor: pointer; }
+    .item img { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; margin-right: 12px; }
+    .item-info { flex: 1; overflow: hidden; }
+    .item-title { font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-artist { font-size: 12px; color: #aaa; margin-top: 4px; }
+    
+    /* Player Audio in Basso */
+    .player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #181818; padding: 15px; border-top: 1px solid #282828; display: flex; flex-direction: column; align-items: center; }
+    audio { width: 100%; max-width: 500px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Audio Player</h2>
-    <input type="text" id="streamUrl" placeholder="Incolla URL audio qui">
-    <button onclick="playAudio()">Riproduci</button>
-    <audio id="audioPlayer" controls></audio>
-  </div>
-  <script>
-    // SOSTITUISCI IL LINK QUI SOTTO CON IL TUO LINK DI RENDER (Mantenendo le virgolette)
-    const BACKEND_URL = "https://audio-backend-qwst.onrender.com";
 
-    function playAudio() {
-      const url = document.getElementById('streamUrl').value;
-      if (!url) return alert('Inserisci un URL valido');
-      document.getElementById('audioPlayer').src = `${BACKEND_URL}/api/stream?url=${encodeURIComponent(url)}`;
-      document.getElementById('audioPlayer').play();
+  <h2>Cerca Musica</h2>
+  
+  <!-- Barra di ricerca libera -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Nome canzone o artista...">
+    <button class="search-btn" onclick="searchMusic()">Cerca</button>
+  </div>
+
+  <!-- Selezione rapida per Genere -->
+  <div class="genres-title">GENERI POPOLARI</div>
+  <div class="genres-container">
+    <div class="genre-chip" onclick="searchByGenre('Musica Italiana')">🇮🇹 Italiana</div>
+    <div class="genre-chip" onclick="searchByGenre('Pop Music Hits')">🎵 Pop</div>
+    <div class="genre-chip" onclick="searchByGenre('Rock Classics')">🎸 Rock</div>
+    <div class="genre-chip" onclick="searchByGenre('Hip Hop Rap')">🎤 Hip Hop</div>
+    <div class="genre-chip" onclick="searchByGenre('Reggaeton Latino')">🔥 Reggaeton</div>
+    <div class="genre-chip" onclick="searchByGenre('Electronic Dance EDM')">⚡ Elettronica</div>
+    <div class="genre-chip" onclick="searchByGenre('Jazz Chillout')">🎷 Jazz</div>
+    <div class="genre-chip" onclick="searchByGenre('Lo-Fi Hip Hop Beats')">🎧 Lo-Fi</div>
+  </div>
+
+  <!-- Contenitore Risultati -->
+  <div class="results" id="results"></div>
+
+  <!-- Player Audio -->
+  <div class="player-bar">
+    <audio id="audioPlayer" controls autoplay></audio>
+  </div>
+
+  <script>
+    // SOSTITUISCI IL LINK QUI SOTTO CON IL TUO URL DI RENDER
+    const BACKEND_URL = "https://audio-backend-xyz.onrender.com";
+
+    // Funzione per la ricerca tramite input di testo
+    async function searchMusic() {
+      const query = document.getElementById('searchInput').value;
+      if (!query) return alert('Inserisci un nome da cercare');
+      executeSearch(query);
+    }
+
+    // Funzione per la ricerca rapida per genere
+    function searchByGenre(genre) {
+      document.getElementById('searchInput').value = genre;
+      executeSearch(genre);
+    }
+
+    // Esegue la chiamata al Backend su Render
+    async function executeSearch(query) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<p style="text-align:center; color:#aaa;">Caricamento brani in corso...</p>';
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        
+        resultsDiv.innerHTML = '';
+        if (data.length === 0) {
+          resultsDiv.innerHTML = '<p style="text-align:center;">Nessun risultato trovato.</p>';
+          return;
+        }
+
+        data.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.onclick = () => playSong(item.id);
+          div.innerHTML = `
+            <img src="${item.thumbnail}" alt="cover">
+            <div class="item-info">
+              <div class="item-title">${item.title}</div>
+              <div class="item-artist">${item.artist} • ${item.duration}</div>
+            </div>
+          `;
+          resultsDiv.appendChild(div);
+        });
+      } catch (err) {
+        resultsDiv.innerHTML = '<p style="text-align:center; color:red;">Errore durante la ricerca.</p>';
+      }
+    }
+
+    // Avvia la riproduzione del brano
+    function playSong(id) {
+      const player = document.getElementById('audioPlayer');
+      player.src = `${BACKEND_URL}/api/stream?id=${id}`;
+      player.play();
     }
   </script>
+
 </body>
 </html>
